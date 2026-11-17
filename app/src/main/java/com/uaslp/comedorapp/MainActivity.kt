@@ -18,10 +18,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             ComedorAppTheme {
-                Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = MaterialTheme.colorScheme.background
-                ) {
+                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     AppNavigationGraph()
                 }
             }
@@ -32,49 +29,38 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun AppNavigationGraph() {
     val navController = rememberNavController()
-
     val cartItems = remember { mutableStateListOf<Dish>() }
 
     NavHost(navController = navController, startDestination = "login") {
 
-        // 1. Autenticación
+        // 1. Autenticación (Modificada con división de flujo)
         composable("login") {
             LoginScreen(
-                onLoginSuccess = { navController.navigate("dashboard") { popUpTo("login") { inclusive = true } } },
+                onLoginSuccess = { email ->
+                    // Validación simple para el prototipo
+                    if (email.contains("admin")) {
+                        navController.navigate("admin_dashboard") { popUpTo("login") { inclusive = true } }
+                    } else {
+                        navController.navigate("dashboard") { popUpTo("login") { inclusive = true } }
+                    }
+                },
                 onNavigateToRegister = { navController.navigate("register") },
                 onNavigateToRecovery = { navController.navigate("recovery") }
             )
         }
 
-        // 2. Registro
-        composable("register") {
-            RegisterScreen(
-                onRegisterSuccess = { navController.popBackStack() },
-                onBack = { navController.popBackStack() }
-            )
-        }
+        // --- RUTAS DEL CLIENTE ---
+        composable("register") { RegisterScreen(onRegisterSuccess = { navController.popBackStack() }, onBack = { navController.popBackStack() }) }
+        composable("recovery") { PasswordRecoveryScreen(onRecoverySuccess = { navController.popBackStack() }, onBack = { navController.popBackStack() }) }
 
-        // 3. Recuperación de contraseña
-        composable("recovery") {
-            PasswordRecoveryScreen(
-                onRecoverySuccess = { navController.popBackStack() },
-                onBack = { navController.popBackStack() }
-            )
-        }
-
-        // 4. Dashboard Principal
         composable("dashboard") {
             DashboardScreen(
                 cartItemCount = cartItems.size,
                 onNavigateToMenu = { navController.navigate("menu") },
                 onNavigateToCart = { navController.navigate("cart") },
-                onLogout = {
-                    navController.navigate("login") { popUpTo("dashboard") { inclusive = true } }
-                }
+                onLogout = { navController.navigate("login") { popUpTo("dashboard") { inclusive = true } } }
             )
         }
-
-        // 5. Catálogo de Menú
         composable("menu") {
             MenuCatalogScreen(
                 cartItemCount = cartItems.size,
@@ -83,8 +69,6 @@ fun AppNavigationGraph() {
                 onBack = { navController.popBackStack() }
             )
         }
-
-        // 6. Carrito de Compras
         composable("cart") {
             CartScreen(
                 cartItems = cartItems,
@@ -93,8 +77,6 @@ fun AppNavigationGraph() {
                 onBack = { navController.popBackStack() }
             )
         }
-
-        // 7. Pago y Envío
         composable("checkout") {
             CheckoutScreen(
                 cartItems = cartItems,
@@ -104,6 +86,20 @@ fun AppNavigationGraph() {
                 },
                 onBack = { navController.popBackStack() }
             )
+        }
+
+        composable("admin_dashboard") {
+            AdminDashboardScreen(
+                onNavigateToMenuManager = { navController.navigate("admin_menu_manager") },
+                onNavigateToDispatch = { navController.navigate("admin_dispatch") },
+                onLogout = { navController.navigate("login") { popUpTo("admin_dashboard") { inclusive = true } } }
+            )
+        }
+        composable("admin_menu_manager") {
+            MenuManagerScreen(onBack = { navController.popBackStack() })
+        }
+        composable("admin_dispatch") {
+            DispatchScreen(onBack = { navController.popBackStack() })
         }
     }
 }
